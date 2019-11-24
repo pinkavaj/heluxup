@@ -21,8 +21,8 @@ class HelmRelease:
     """
     HelmRelease represents a HelmRelease object that is used by flux.
     """
-    def __init__(self, release_name, chart_name, repository, git_version):
-        self.release_name = release_name
+    def __init__(self, chart_name, repository, git_version, namespace, release_name=None):
+        self.release_name = release_name or '%s-%s' % (namespace, chart_name)
         self.chart_name = chart_name
         self.repository = repository.rstrip('/')
         self.git_version = git_version
@@ -74,10 +74,11 @@ def cli(dry_run, git_directory):
                     for release in docs:
                         if release is not None and 'kind' in release and release['kind'] == 'HelmRelease':
                             helm_release = HelmRelease(
-                                release_name=release['spec']['releaseName'],
+                                release_name=release['spec'].get('releaseName'),
                                 chart_name=release['spec']['chart']['name'],
                                 repository=release['spec']['chart']['repository'],
                                 git_version=release['spec']['chart']['version'],
+                                namespace=release['metadata']['namespace']
                             )
                             if helm_release.git_version != helm_release.latest_version:
                                 click.echo('{}Updating release {} ({}) from {} to {}'
